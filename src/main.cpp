@@ -11,9 +11,6 @@
 
 NeoPixelConnect strip(LED_PIN, MAXIMUM_NUM_NEOPIXELS, pio0, 0);
 
-// testar a as modificações do git
-int testegit;
-
 typedef struct
 {
   int state, new_state;
@@ -31,9 +28,19 @@ uint8_t S3, prevS3;
 uint8_t LED_1, LED_2;
 
 // Our finite state machines
-fsm_t fsm1, fsm2, fsm3, fsm4, fsm5, fsm6;
+fsm_t fsm1, fsm2, fsm3, fsm4, fsm5, fsm6, fsm7, fsm8, fsm9;
+
+int i;
 
 int LEDS[5];
+int violet[] = {148, 0, 211};
+int blue[] = {0, 0, 255};
+int cyan[] = {0, 183, 235};
+int green[] = {0, 255, 0};
+int yellow[] = {255, 255, 0};
+int orange[] = {255, 94, 5};
+int white[] = {255, 255, 255};
+int color[] = {0, 255, 0};
 int current_state = 0;
 int current_ligth[5] = {1, 1, 1, 1, 1};
 
@@ -42,6 +49,8 @@ unsigned long loop_micros;
 uint16_t blink_period;
 uint16_t blink_period2; // added blink period for LED2 control
 
+uint16_t total_time;
+uint16_t blink_time;
 uint16_t blink_1seconds;
 uint16_t blink_2seconds;
 uint16_t blink_5seconds;
@@ -76,12 +85,19 @@ void setup()
   blink_2seconds = 2000;
   blink_5seconds = 5000;
   blink_10seconds = 10000;
+  blink_time = 2000;
   interval = 40;
   set_state(fsm1, 0);
   set_state(fsm2, 0);
   set_state(fsm3, 0);
   set_state(fsm4, 0);
   set_state(fsm5, 0);
+  set_state(fsm6, 0);
+  set_state(fsm7, 0);
+  set_state(fsm8, 0);
+  set_state(fsm9, 0);
+  total_time = 0;
+  i = 0;
 }
 
 void loop()
@@ -124,33 +140,36 @@ void loop()
     fsm4.tis = cur_time - fsm4.tes;
     fsm5.tis = cur_time - fsm5.tes;
     fsm6.tis = cur_time - fsm6.tes;
+    fsm7.tis = cur_time - fsm7.tes;
+    fsm8.tis = cur_time - fsm8.tes;
+    fsm9.tis = cur_time - fsm9.tes;
 
     // Calculate next state for the first state machine
     if (fsm1.state == 0 && (S1 || S2 || S3) && fsm5.state == 0)
     {
       fsm1.new_state = 1;
     }
-    else if (fsm1.state == 1 && fsm1.tis > blink_2seconds && fsm3.state == 0)
+    else if (fsm1.state == 1 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 2;
     }
-    else if (fsm1.state == 2 && fsm1.tis > blink_2seconds && fsm3.state == 0)
+    else if (fsm1.state == 2 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 3;
     }
-    else if (fsm1.state == 3 && fsm1.tis > blink_2seconds && fsm3.state == 0)
+    else if (fsm1.state == 3 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 4;
     }
-    else if (fsm1.state == 4 && fsm1.tis > blink_2seconds && fsm3.state == 0)
+    else if (fsm1.state == 4 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 5;
     }
-    else if (fsm1.state == 5 && fsm1.tis > blink_2seconds && fsm3.state == 0)
+    else if (fsm1.state == 5 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 6;
     }
-    else if (fsm1.state == 6 && fsm1.tis > blink_period2 && fsm3.state == 0)
+    else if (fsm1.state == 6 && fsm1.tis > blink_time && fsm3.state == 0)
     {
       fsm1.new_state = 7;
     }
@@ -250,74 +269,326 @@ void loop()
     }
     else if (S2 && (fsm5.state == 2 || fsm5.state == 3))
     {
-      /* code */
+      fsm5.new_state = 4;
     }
-    if (fsm6.state == 0 && (fsm5.state == 2 || fsm5.state == 3))
+    else if (fsm5.state == 4 && fsm5.tis > 3000)
+    {
+      fsm5.new_state = 5;
+      fsm1.state = 0;
+    }
+    else if (fsm5.state == 5 && !S2)
+    {
+      fsm5.new_state = 0;
+    }
+    else if (fsm5.state == 4 && !S2)
+    {
+      fsm5.new_state = 6; // configuração 1
+    }
+    else if (fsm5.state == 6 && S2)
+    {
+      fsm5.new_state = 7;
+    }
+    else if (fsm5.state == 7 && S2 && fsm5.tis > 3000)
+    {
+      fsm5.new_state = 5;
+      fsm6.new_state = 0; // guarda conf
+    }
+    else if (fsm5.state == 7 && !S2)
+    {
+      fsm5.new_state = 8;
+      fsm6.new_state = 0; // configuração 2
+    }
+    else if (fsm5.state == 8 && S2)
+    {
+      fsm5.new_state = 9;
+    }
+    else if (fsm5.state == 9 && S2 && fsm5.tis > 3000)
+    {
+      fsm5.new_state = 5; // guarda conf
+    }
+    else if (fsm5.state == 9 && !S2)
+    {
+      fsm5.new_state = 10; // configuração 3
+    }
+    else if (fsm5.state == 10 && S2)
+    {
+      fsm5.new_state = 11;
+    }
+    else if (fsm5.state == 11 && S2 && fsm5.tis > 3000)
+    {
+      fsm5.new_state = 5; // guarda conf
+    }
+    else if (fsm5.state == 11 && !S2)
+    {
+      fsm5.new_state = 12;
+    }
+    else if (fsm5.state == 12 && S2)
+    {
+      fsm5.new_state = 4;
+    }
+
+    if (fsm6.state == 0 && (fsm5.state == 6))
     {
       fsm6.new_state = 1;
     }
-    else if (fsm6.state == 1 && !S3 & fsm6.tis > blink_1seconds)
-    {
-      fsm6.new_state = 0;
-    }
-    else if (S3 && fsm6.state == 0 || fsm6.state == 1)
+    else if (fsm6.state == 1 && !S3 && fsm6.tis > blink_1seconds)
     {
       fsm6.new_state = 2;
+      blink_time = blink_1seconds;
     }
-
-    else if (fsm6.state == 2 && !S3 & fsm6.tis > blink_2seconds)
+    else if (fsm6.state == 2 && !S3 && fsm6.tis > blink_1seconds)
+    {
+      fsm6.new_state = 1;
+      blink_time = blink_1seconds;
+    }
+    else if (S3 && (fsm6.state == 2 || fsm6.state == 1))
     {
       fsm6.new_state = 3;
     }
-    else if (fsm6.state == 3 && !S3 & fsm6.tis > blink_2seconds)
-    {
-      fsm6.new_state = 2;
-    }
-    else if (S3 && (fsm6.state == 2 || fsm6.state == 3))
+    else if (fsm6.state == 3 && !S3)
     {
       fsm6.new_state = 4;
     }
-    else if (fsm6.state == 4 && !S3 & fsm6.tis > blink_5seconds)
+    else if (fsm6.state == 4 && !S3 && fsm6.tis > blink_2seconds)
     {
       fsm6.new_state = 5;
+      blink_time = blink_2seconds;
     }
-    else if (fsm6.state == 5 && !S3 & fsm6.tis > blink_5seconds)
+    else if (fsm6.state == 5 && !S3 && fsm6.tis > blink_2seconds)
     {
       fsm6.new_state = 4;
+      blink_time = blink_2seconds;
     }
     else if (S3 && (fsm6.state == 4 || fsm6.state == 5))
     {
       fsm6.new_state = 6;
     }
-
-    else if (fsm6.state == 6 && !S3 & fsm6.tis > blink_10seconds)
+    else if (!S3 && fsm6.state == 6)
     {
       fsm6.new_state = 7;
     }
-    else if (fsm6.state == 7 && !S3 & fsm6.tis > blink_10seconds)
+    else if (fsm6.state == 7 && !S3 && fsm6.tis > blink_5seconds)
     {
-      fsm6.new_state = 6;
+      fsm6.new_state = 8;
+      blink_time = blink_5seconds;
     }
-    else if (S3 && (fsm6.state == 6 || fsm6.state == 7))
+    else if (fsm6.state == 8 && !S3 && fsm6.tis > blink_5seconds)
     {
-      fsm6.new_state = 0;
+      fsm6.new_state = 7;
+      blink_time = blink_5seconds;
     }
-    else if ((fsm6.state == 0 || fsm6.state == 1 || fsm6.state == 2 || fsm6.state == 3 || fsm6.state == 4 || fsm6.state == 5 || fsm6.state == 6 || fsm6.state == 7 || fsm6.state == 8) && S2)
+    else if (S3 && (fsm6.state == 7 || fsm6.state == 8))
+    {
+      fsm6.new_state = 9;
+    }
+    else if (!S3 && fsm6.state == 9)
     {
       fsm6.new_state = 10;
     }
-    else if (fsm6.state == 10 && fsm6.tis > 3000)
+    else if (fsm6.state == 10 && !S3 && fsm6.tis > blink_10seconds)
     {
-      fsm5.state = 0;
-      fsm6.state = 0;
+      fsm6.new_state = 11;
+      blink_time = blink_10seconds;
     }
+    else if (fsm6.state == 11 && !S3 && fsm6.tis > blink_10seconds)
+    {
+      fsm6.new_state = 10;
+      blink_time = blink_10seconds;
+    }
+    else if (S3 && (fsm6.state == 10 || fsm6.state == 11))
+    {
+      fsm6.new_state = 12;
+    }
+    else if (fsm6.state == 12 && !S3)
+    {
+      fsm6.new_state = 1;
+    }
+    else if (fsm6.state > 0 && (fsm5.state == 5 || fsm5.state == 7) && fsm8.state > 0)
+    {
+      fsm6.new_state = 0;
+    }
+    if (fsm8.state == 0 && fsm5.state == 10)
+    {
+      fsm8.new_state = 1;
+    }
+    else if (fsm8.state == 1 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 2;
+    }
+    else if (fsm8.state == 2 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 1;
+    }
+    else if (S3 && (fsm8.state == 1 || fsm8.state == 2))
+    {
+      fsm8.new_state = 3;
+    }
+    else if (fsm8.state == 3 && !S3)
+    {
+      fsm8.new_state = 4;
+    }
+    else if (fsm8.state == 4 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 5;
+    }
+    else if (fsm8.state == 5 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 4;
+    }
+    else if (S3 && (fsm8.state == 4 || fsm8.state == 5))
+    {
+      fsm8.new_state = 6;
+    }
+    else if (fsm8.state == 6 && !S3)
+    {
+      fsm8.new_state = 7;
+    }
+    else if (fsm8.state == 7 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 8;
+    }
+    else if (fsm8.state == 8 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 7;
+    }
+    else if (S3 && (fsm8.state == 7 || fsm8.state == 8))
+    {
+      fsm8.new_state = 9;
+    }
+    else if (fsm8.state == 9 && !S3)
+    {
+      fsm8.new_state = 10;
+    }
+    else if (fsm8.state == 10 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 11;
+    }
+    else if (fsm8.state == 11 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 10;
+    }
+    else if (S3 && (fsm8.state == 10 || fsm8.state == 11))
+    {
+      fsm8.new_state = 12;
+    }
+    else if (fsm8.state == 12 && !S3)
+    {
+      fsm8.new_state = 13;
+    }
+    else if (fsm8.state == 13 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 14;
+    }
+    else if (fsm8.state == 14 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 13;
+    }
+    else if (S3 && (fsm8.state == 13 || fsm8.state == 14))
+    {
+      fsm8.new_state = 15;
+    }
+    else if (fsm8.state == 15 && !S3)
+    {
+      fsm8.new_state = 16;
+    }
+    else if (fsm8.state == 16 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 17;
+    }
+    else if (fsm8.state == 17 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 16;
+    }
+    else if (S3 && (fsm8.state == 16 || fsm8.state == 17))
+    {
+      fsm8.new_state = 18;
+    }
+    else if (fsm8.state == 18 && !S3)
+    {
+      fsm8.new_state = 19;
+    }
+    else if (fsm8.state == 19 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 20;
+    }
+    else if (fsm8.state == 20 && fsm8.tis > blink_1seconds && !S3)
+    {
+      fsm8.new_state = 19;
+    }
+    else if (S3 && (fsm8.state == 19 || fsm8.state == 20))
+    {
+      fsm8.new_state = 3;
+    }
+    else if (fsm6.state > 0 && fsm5.state == 5)
+    {
+      fsm8.new_state = 0;
+    }
+    else if (fsm8.state > 0 && (fsm5.state == 5 || fsm5.state == 9) && fsm8.state > 0)
+    {
+      fsm8.new_state = 0;
+    }
+    /// idle effect
+    if (fsm1.state == 7 || fsm1.state == 8)
+    {
+      i++;
+    }
+    else
+    {
+      i = 0;
+    }
+
+    if (fsm9.state == 0 && ((i * interval) > 30000))
+    {
+      fsm9.new_state = 1;
+      fsm1.new_state = 0;
+    }
+    else if (fsm9.state == 1 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 2;
+    }
+    else if (fsm9.state == 2 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 3;
+    }
+    else if (fsm9.state == 3 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 4;
+    }
+    else if (fsm9.state == 4 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 5;
+    }
+    else if (fsm9.state == 5 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 6;
+    }
+    else if (fsm9.state == 6 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 7;
+    }
+    else if (fsm9.state == 7 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 8;
+    }
+    else if (fsm9.state == 8 && fsm1.tis > 200)
+    {
+      fsm9.new_state = 1;
+    }
+    else if (fsm9.state > 0 && (S1 || S2 || S3))
+    {
+      fsm9.new_state = 0;
+    }
+
     // Update the states
     set_state(fsm1, fsm1.new_state);
     set_state(fsm2, fsm2.new_state);
     set_state(fsm3, fsm3.new_state);
     set_state(fsm4, fsm4.new_state);
     set_state(fsm5, fsm5.new_state);
-    set_state(fsm6, fsm5.new_state);
+    set_state(fsm6, fsm6.new_state);
+    set_state(fsm7, fsm7.new_state);
+    set_state(fsm8, fsm8.new_state);
+    set_state(fsm9, fsm9.new_state);
 
     // Actions set by the current state of the first state machine
     if (fsm1.state == 0)
@@ -326,56 +597,56 @@ void loop()
     }
     else if (fsm1.state == 1)
     {
-      strip.neoPixelSetValue(4, 0, 255, 0);
-      strip.neoPixelSetValue(3, 0, 255, 0);
-      strip.neoPixelSetValue(2, 0, 255, 0);
-      strip.neoPixelSetValue(1, 0, 255, 0);
-      strip.neoPixelSetValue(0, 0, 255, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 1, LEDS[1] = 1, LEDS[2] = 1, LEDS[3] = 1, LEDS[4] = 1;
     }
     else if (fsm1.state == 2)
     {
-      strip.neoPixelSetValue(4, 0, 0, 0);
-      strip.neoPixelSetValue(3, 0, 255, 0);
-      strip.neoPixelSetValue(2, 0, 255, 0);
-      strip.neoPixelSetValue(1, 0, 255, 0);
-      strip.neoPixelSetValue(0, 0, 255, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 1, LEDS[3] = 1, LEDS[4] = 1;
     }
     else if (fsm1.state == 3)
     {
-      strip.neoPixelSetValue(4, 0, 0, 0);
-      strip.neoPixelSetValue(3, 0, 0, 0);
-      strip.neoPixelSetValue(2, 0, 255, 0);
-      strip.neoPixelSetValue(1, 0, 255, 0);
-      strip.neoPixelSetValue(0, 0, 255, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 1, LEDS[4] = 1;
     }
     else if (fsm1.state == 4)
     {
-      strip.neoPixelSetValue(4, 0, 0, 0);
-      strip.neoPixelSetValue(3, 0, 0, 0);
-      strip.neoPixelSetValue(2, 0, 0, 0);
-      strip.neoPixelSetValue(1, 0, 255, 0);
-      strip.neoPixelSetValue(0, 0, 255, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 1, LEDS[4] = 1;
     }
     else if (fsm1.state == 5)
     {
-      strip.neoPixelSetValue(4, 0, 0, 0);
-      strip.neoPixelSetValue(3, 0, 0, 0);
-      strip.neoPixelSetValue(2, 0, 0, 0);
-      strip.neoPixelSetValue(1, 0, 0, 0);
-      strip.neoPixelSetValue(0, 0, 255, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
     }
     else if (fsm1.state == 6)
     {
-      strip.neoPixelSetValue(4, 0, 0, 0);
-      strip.neoPixelSetValue(3, 0, 0, 0);
-      strip.neoPixelSetValue(2, 0, 0, 0);
-      strip.neoPixelSetValue(1, 0, 0, 0);
-      strip.neoPixelSetValue(0, 0, 0, 0);
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
       LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
     }
     else if (fsm1.state == 7)
@@ -420,6 +691,7 @@ void loop()
       {
       }
     }
+
     else if (fsm5.state == 2)
     {
       LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
@@ -438,87 +710,474 @@ void loop()
       strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
       strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
-    if (fsm6.state == 0)
+    else if (fsm5.state == 3)
+    {
+      LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 255 * LEDS[1], 0 * LEDS[1], 0 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm5.state == 4)
+    {
+      while (S2)
+      {
+      }
+    }
+    else if (fsm5.state == 5)
+    {
+      LEDS[0] = 1, LEDS[1] = 1, LEDS[2] = 1, LEDS[3] = 1, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm5.state == 6)
     {
       LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
-    else if (fsm6.state == 1)
+    else if (fsm5.state == 7)
     {
-      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      while (S2)
+      {
+      }
+    }
+    else if (fsm5.state == 8)
+    {
+      LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm5.state == 9)
+    {
+      while (S2)
+      {
+      }
+    }
+    else if (fsm5.state == 10)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm5.state == 11)
+    {
+      while (S2)
+      {
+      }
+    }
+    else if (fsm5.state == 12)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 1, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 0 * LEDS[0], 255 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    if (fsm6.state == 1)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 2)
     {
-      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 3)
     {
-      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 4)
     {
       LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 5)
     {
-      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 6)
     {
-      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 7)
     {
-      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
     else if (fsm6.state == 8)
     {
-      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
-      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 255 * LEDS[0]);
-      strip.neoPixelSetValue(3, 0 * LEDS[1], 255 * LEDS[1], 255 * LEDS[1]);
-      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 255 * LEDS[2]);
-      strip.neoPixelSetValue(1, 0 * LEDS[3], 255 * LEDS[3], 255 * LEDS[3]);
-      strip.neoPixelSetValue(0, 0 * LEDS[4], 255 * LEDS[4], 255 * LEDS[4]);
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
     }
+    else if (fsm6.state == 9)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm6.state == 10)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm6.state == 11)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    else if (fsm6.state == 12)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, 0 * LEDS[0], 255 * LEDS[0], 0 * LEDS[0]);
+      strip.neoPixelSetValue(3, 0 * LEDS[1], 0 * LEDS[1], 255 * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 0 * LEDS[2], 255 * LEDS[2]);
+      strip.neoPixelSetValue(1, 0 * LEDS[3], 0 * LEDS[3], 255 * LEDS[3]);
+      strip.neoPixelSetValue(0, 0 * LEDS[4], 0 * LEDS[4], 255 * LEDS[4]);
+    }
+    if (fsm8.state == 1)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = violet[0], color[1] = violet[1], color[2] = violet[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 2)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = violet[0], color[1] = violet[1], color[2] = violet[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 3)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = blue[0], color[1] = blue[1], color[2] = blue[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 4)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = blue[0], color[1] = blue[1], color[2] = blue[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 5)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = blue[0], color[1] = blue[1], color[2] = blue[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 6)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = cyan[0], color[1] = cyan[1], color[2] = cyan[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 7)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = cyan[0], color[1] = cyan[1], color[2] = cyan[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 8)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = cyan[0], color[1] = cyan[1], color[2] = cyan[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 9)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = green[0], color[1] = green[1], color[2] = green[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 10)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = green[0], color[1] = green[1], color[2] = green[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 11)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = green[0], color[1] = green[1], color[2] = green[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 12)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = yellow[0], color[1] = yellow[1], color[2] = yellow[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 13)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = yellow[0], color[1] = yellow[1], color[2] = yellow[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 14)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = yellow[0], color[1] = yellow[1], color[2] = yellow[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 15)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = orange[0], color[1] = orange[1], color[2] = orange[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 16)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = orange[0], color[1] = orange[1], color[2] = orange[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 17)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = orange[0], color[1] = orange[1], color[2] = orange[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 18)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = white[0], color[1] = white[1], color[2] = white[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 19)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = white[0], color[1] = white[1], color[2] = white[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    else if (fsm8.state == 20)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 1;
+      color[0] = white[0], color[1] = white[1], color[2] = white[2];
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, 0 * LEDS[2], 255 * LEDS[2], 0 * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 1)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 1;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 2)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 1, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 3)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 4)
+    {
+      LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 5)
+    {
+      LEDS[0] = 1, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 6)
+    {
+      LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 7)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 1, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 8)
+    {
+      LEDS[0] = 0, LEDS[1] = 0, LEDS[2] = 0, LEDS[3] = 1, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+    if (fsm9.new_state == 6)
+    {
+      LEDS[0] = 0, LEDS[1] = 1, LEDS[2] = 0, LEDS[3] = 0, LEDS[4] = 0;
+      strip.neoPixelSetValue(4, color[0] * LEDS[0], color[1] * LEDS[0], color[2] * LEDS[0]);
+      strip.neoPixelSetValue(3, color[0] * LEDS[1], color[1] * LEDS[1], color[2] * LEDS[1]);
+      strip.neoPixelSetValue(2, color[0] * LEDS[2], color[1] * LEDS[2], color[2] * LEDS[2]);
+      strip.neoPixelSetValue(1, color[0] * LEDS[3], color[1] * LEDS[3], color[2] * LEDS[3]);
+      strip.neoPixelSetValue(0, color[0] * LEDS[4], color[1] * LEDS[4], color[2] * LEDS[4]);
+    }
+
     // Set the outputs
     strip.neoPixelShow();
 
@@ -565,8 +1224,17 @@ void loop()
     Serial.print(" fsm6: ");
     Serial.print(fsm6.state);
 
+    Serial.print(" fsm8: ");
+    Serial.print(fsm8.state);
+
+    Serial.print(" fsm9: ");
+    Serial.print(fsm9.state);
+
+    Serial.print(" i ");
+    Serial.print(i);
+
     Serial.print(" blink: ");
-    Serial.print(fsm5.tis);
+    Serial.print(blink_time);
 
     Serial.print(" loop: ");
     Serial.print(micros() - loop_micros);
